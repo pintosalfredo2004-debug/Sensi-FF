@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sensi FF · Generador de sensibilidad</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1A1520">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sensi FF">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1A1520;
+    --panel:#241D2B;
+    --panel-2:#2E2434;
+    --orange:#FF6B35;
+    --red:#E8384F;
+    --gold:#FFC93C;
+    --teal:#3EE6C4;
+    --text:#F5F0E8;
+    --muted:#A99BAE;
+    --fire: linear-gradient(90deg, var(--gold), var(--orange) 55%, var(--red));
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(255,107,53,0.16), transparent 45%),
+      radial-gradient(circle at 90% 10%, rgba(62,230,196,0.10), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Manrope', sans-serif;
+    min-height:100vh;
+    padding:28px 16px 60px;
+  }
+  .wrap{max-width:520px; margin:0 auto;}
+
+  header{text-align:center; margin-bottom:28px;}
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px; letter-spacing:3px; color:var(--teal);
+    text-transform:uppercase; margin-bottom:6px;
+  }
+  h1{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:44px; line-height:0.95;
+    letter-spacing:1px;
+    background:var(--fire);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  header p{color:var(--muted); font-size:14px; margin-top:8px;}
+
+  .card{
+    background:var(--panel);
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:18px;
+    padding:22px;
+    margin-bottom:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+  }
+
+  label{
+    display:block; font-size:12px; font-weight:800; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--muted); margin-bottom:8px;
+  }
+  select, input[list]{
+    width:100%; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);
+    background:var(--panel-2); color:var(--text); font-size:15px; font-family:'Manrope';
+    margin-bottom:18px; outline:none;
+  }
+  select:focus, input[list]:focus{border-color:var(--orange);}
+
+  button{
+    width:100%; padding:16px; border:none; border-radius:14px;
+    background:var(--fire); color:#1A1520; font-weight:800; font-size:15px;
+    letter-spacing:0.5px; cursor:pointer; text-transform:uppercase;
+    transition:transform .12s ease, opacity .12s ease;
+  }
+  button:active{transform:scale(0.98);}
+  button.secondary{
+    background:var(--panel-2); color:var(--text); border:1px solid rgba(255,255,255,0.12);
+    margin-top:10px;
+  }
+
+  #result{display:none;}
+
+  .tier-badge{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700;
+    letter-spacing:1px; text-transform:uppercase;
+    padding:6px 12px; border-radius:999px; margin-bottom:18px;
+    background:rgba(62,230,196,0.12); color:var(--teal); border:1px solid rgba(62,230,196,0.3);
+  }
+  .tier-badge.media{background:rgba(255,201,60,0.12); color:var(--gold); border-color:rgba(255,201,60,0.3);}
+  .tier-badge.baja{background:rgba(232,56,79,0.12); color:#ff8b98; border-color:rgba(232,56,79,0.3);}
+
+  .dial-row{display:flex; align-items:center; gap:18px; margin-bottom:20px;}
+  .dial{
+    position:relative; width:96px; height:96px; border-radius:50%; flex-shrink:0;
+    background: conic-gradient(var(--orange) calc(var(--pct)*1%), rgba(255,255,255,0.08) 0);
+  }
+  .dial::before{
+    content:''; position:absolute; inset:8px; border-radius:50%; background:var(--panel);
+  }
+  .dial span{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono', monospace; font-size:22px; font-weight:700; color:var(--text);
+  }
+  .dial-label{color:var(--muted); font-size:13px; line-height:1.4;}
+  .dial-label b{color:var(--text); display:block; font-size:15px; font-family:'Bebas Neue'; letter-spacing:0.5px;}
+
+  .stat{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .stat:last-child{border-bottom:none;}
+  .stat-name{font-size:14px; color:var(--muted);}
+  .stat-bar-wrap{display:flex; align-items:center; gap:10px; width:58%;}
+  .stat-bar{flex:1; display:flex; gap:3px;}
+  .stat-bar .seg{
+    flex:1; height:14px; border-radius:2px;
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.06);
+    clip-path:polygon(15% 0,100% 0,85% 100%,0 100%);
+  }
+  .stat-bar .seg.on{
+    background:var(--fire);
+    border-color:transparent;
+    box-shadow:0 0 6px rgba(255,107,53,0.55);
+  }
+  .stat-bar .seg.on.peak{ box-shadow:0 0 9px rgba(255,201,60,0.75); }
+  .stat-val{font-family:'JetBrains Mono', monospace; font-weight:700; font-size:14px; width:34px; text-align:right;}
+
+  .note{
+    font-size:12.5px; color:var(--muted); line-height:1.6; margin-top:16px;
+    padding-top:14px; border-top:1px dashed rgba(255,255,255,0.1);
+  }
+  .hidden{display:none;}
+  #notFound{color:var(--muted); font-size:13px; margin-top:-8px; margin-bottom:16px;}
+  #notFound b{color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Sensi FF</div>
+    <h1>AFINÁ TU<br>SENSIBILIDAD</h1>
+    <p>Elegí tu celular y generá una configuración pensada para su gama de rendimiento.</p>
+  </header>
+
+  <div class="card">
+    <label for="brand">Marca</label>
+    <select id="brand"></select>
+
+    <label for="model">Modelo</label>
+    <input id="model" list="modelList" placeholder="Ej: Galaxy A54, Redmi Note 12...">
+    <datalist id="modelList"></datalist>
+
+    <div id="tierPicker" class="hidden">
+      <label for="tier">No encontramos ese modelo exacto — elegí la gama que más se le parezca</label>
+      <select id="tier">
+        <option value="alta">Gama alta (flagship, gaming)</option>
+        <option value="media">Gama media</option>
+        <option value="baja">Gama baja / entrada</option>
+      </select>
+    </div>
+
+    <button id="genBtn">Generar sensibilidad</button>
+  </div>
+
+  <div class="card" id="result">
+    <span id="tierBadge" class="tier-badge">Gama</span>
+
+    <div class="dial-row">
+      <div class="dial" id="dial"><span id="dialVal">0</span></div>
+      <div class="dial-label">
+        <b>Sensibilidad general</b>
+        Punto de partida — ajustá ±5 según cómodo te sientas los primeros minutos.
+      </div>
+    </div>
+
+    <div id="stats"></div>
+
+    <div class="note" id="tips"></div>
+  </div>
+
+  <button class="secondary hidden" id="resetBtn">Probar otro celular</button>
+</div>
+
+<script>
+const DB = {
+  Samsung: {
+    alta: ["Galaxy S24","Galaxy S23","Galaxy S22","Galaxy S21","Galaxy Note 20","Galaxy Z Flip","Galaxy Z Fold","Galaxy S20"],
+    media: ["Galaxy A54","Galaxy A55","Galaxy A34","Galaxy A53","Galaxy A52","Galaxy A50","Galaxy A35","Galaxy M54","Galaxy M53"],
+    baja: ["Galaxy A14","Galaxy A15","Galaxy A04","Galaxy A03","Galaxy A05","Galaxy M14","Galaxy A13"]
+  },
+  "Xiaomi / Redmi / POCO": {
+    alta: ["POCO F5","POCO F6","Xiaomi 13","Xiaomi 12","Mi 11","POCO X6 Pro","Redmi K60","POCO F4"],
+    media: ["Redmi Note 12","Redmi Note 13","Redmi Note 11","POCO X5","POCO X4","Redmi Note 12 Pro","Redmi Note 13 Pro"],
+    baja: ["Redmi 12","Redmi 10","Redmi 9","Redmi A2","POCO C65","Redmi 12C","Redmi 9A"]
+  },
+  iPhone: {
+    alta: ["iPhone 15","iPhone 14","iPhone 13","iPhone 15 Pro","iPhone 14 Pro","iPhone 13 Pro","iPhone 12 Pro"],
+    media: ["iPhone 12","iPhone 11","iPhone SE 2022","iPhone XR"],
+    baja: ["iPhone SE 2016","iPhone 8","iPhone 7","iPhone X"]
+  },
+  Motorola: {
+    alta: ["Edge 40","Edge 30","Moto G84","Edge 50"],
+    media: ["Moto G73","Moto G54","Moto G82","Moto G62","Moto G72","Moto G60"],
+    baja: ["Moto G23","Moto E13","Moto G13","Moto E20","Moto G22","Moto E7"]
+  },
+  Realme: {
+    alta: ["GT Neo 5","GT 2 Pro","GT Master","11 Pro+"],
+    media: ["Realme 11","Realme 10","Realme 9","Realme 9 Pro","Realme C67"],
+    baja: ["Realme C55","Realme C35","Realme C30","Realme C21","Realme C11"]
+  },
+  Huawei: {
+    alta: ["P50 Pro","Mate 40","P40 Pro","Mate 50"],
+    media: ["Nova 11","Nova 9","P30","Nova 10"],
+    baja: ["Y9","Y7","Y6","Y8s","Y5"]
+  },
+  Honor: {
+    alta: ["Magic 5","Magic 6","90 Pro"],
+    media: ["Honor 90","Honor 70","Honor X9"],
+    baja: ["Honor X7","Honor X8","Honor 9A"]
+  },
+  "Infinix / Tecno": {
+    alta: ["Note 30 Pro","Camon 20 Pro","Zero 30"],
+    media: ["Hot 30","Note 12","Camon 19","Spark 20 Pro"],
+    baja: ["Smart 7","Hot 10","Spark 8","Smart 6"]
+  },
+  LG: {
+    alta: ["LG V60","LG G8"],
+    media: ["LG K61","LG Velvet","LG Stylo 6"],
+    baja: ["LG K22","LG K41","LG K12"]
+  }
+};
+
+const TIER_PROFILE = {
+  alta:  {gen:[92,100], red:[88,96], x2:[62,70], x4:[52,60], awm:[38,46], free:[72,80], dpi:[420,480], fire:[92,100]},
+  media: {gen:[75,86],  red:[70,80], x2:[50,58], x4:[40,48], awm:[28,36], free:[58,68], dpi:[350,410], fire:[78,88]},
+  baja:  {gen:[58,70],  red:[54,64], x2:[38,46], x4:[28,36], awm:[18,26], free:[42,52], dpi:[280,340], fire:[64,74]}
+};
+
+const TIER_TIPS = {
+  alta: "Tu celular soporta buena tasa de cuadros: podés animar un poco más la sensibilidad general y de mira roja sin perder control. Probá bajar 3-4 puntos si sentís que se te va la puntería al girar rápido.",
+  media: "Es un rango equilibrado. Si notás tirones al abrir mira, bajá 2x/4x unos 4 puntos antes de tocar la general — casi siempre el problema es la estabilidad de cuadros, no la sensibilidad.",
+  baja: "Priorizamos control por sobre velocidad, porque con menos cuadros por segundo un giro brusco es más difícil de corregir. Activá el modo de gráficos 'Suave' o 'Básico' en Free Fire para ganar estabilidad antes de subir sensibilidad."
+};
+
+const brandSelect = document.getElementById('brand');
+const modelInput = document.getElementById('model');
+const modelList = document.getElementById('modelList');
+const tierPicker = document.getElementById('tierPicker');
+const tierSelect = document.getElementById('tier');
+const result = document.getElementById('result');
+const resetBtn = document.getElementById('resetBtn');
+
+Object.keys(DB).forEach(b=>{
+  const o = document.createElement('option');
+  o.value=b; o.textContent=b;
+  brandSelect.appendChild(o);
+});
+
+function fillModels(){
+  modelList.innerHTML='';
+  const brand = DB[brandSelect.value];
+  Object.values(brand).flat().forEach(m=>{
+    const o=document.createElement('option'); o.value=m; modelList.appendChild(o);
+  });
+  tierPicker.classList.add('hidden');
+}
+brandSelect.addEventListener('change', fillModels);
+fillModels();
+
+function findTier(brand, model){
+  const data = DB[brand];
+  const q = model.trim().toLowerCase();
+  if(!q) return null;
+  for(const tier of ['alta','media','baja']){
+    if(data[tier].some(m => m.toLowerCase() === q || q.includes(m.toLowerCase()) || m.toLowerCase().includes(q))){
+      return tier;
+    }
+  }
+  return null;
+}
+
+// hash determinístico simple para que el mismo modelo siempre de el mismo resultado
+function seedFrom(str){
+  let h=0;
+  for(let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; }
+  return h;
+}
+function valueInRange(range, seed, offset){
+  const [min,max]=range;
+  const r = ((seed>>offset)%97)/97; // pseudo-random 0..1 estable
+  return Math.round(min + r*(max-min));
+}
+
+modelInput.addEventListener('input', ()=>{
+  tierPicker.classList.add('hidden');
+});
+
+document.getElementById('genBtn').addEventListener('click', ()=>{
+  const brand = brandSelect.value;
+  const model = modelInput.value.trim();
+  let tier = findTier(brand, model);
+
+  if(!tier){
+    if(tierPicker.classList.contains('hidden')){
+      tierPicker.classList.remove('hidden');
+      return;
+    }
+    tier = tierSelect.value;
+  }
+
+  const seed = seedFrom(brand+model+tier);
+  const profile = TIER_PROFILE[tier];
+
+  const vals = {
+    gen: valueInRange(profile.gen, seed, 1),
+    red: valueInRange(profile.red, seed, 3),
+    x2: valueInRange(profile.x2, seed, 5),
+    x4: valueInRange(profile.x4, seed, 7),
+    awm: valueInRange(profile.awm, seed, 9),
+    free: valueInRange(profile.free, seed, 11),
+    dpi: valueInRange(profile.dpi, seed, 13),
+    fire: valueInRange(profile.fire, seed, 15)
+  };
+
+  const badge = document.getElementById('tierBadge');
+  badge.className = 'tier-badge ' + (tier==='alta'?'':tier);
+  badge.textContent = tier==='alta' ? 'Gama alta' : tier==='media' ? 'Gama media' : 'Gama baja';
+
+  document.getElementById('dial').style.setProperty('--pct', vals.gen);
+  document.getElementById('dialVal').textContent = vals.gen;
+
+  const stats = [
+    ['Mira Punto Rojo', vals.red, 100],
+    ['Mira 2x', vals.x2, 100],
+    ['Mira 4x', vals.x4, 100],
+    ['Mira AWM / francotirador', vals.awm, 100],
+    ['Vista libre (free look)', vals.free, 100],
+    ['DPI recomendado', vals.dpi, 500],
+    ['Tamaño De Botón De Disparo', vals.fire, 100],
+  ];
+
+  const SEGMENTS = 12;
+  function buildSegments(val, max){
+    const filled = Math.min(SEGMENTS, Math.round((val/max)*SEGMENTS));
+    let html='';
+    for(let i=0;i<SEGMENTS;i++){
+      const on = i < filled;
+      const peak = on && i === filled-1;
+      html += `<div class="seg${on?' on':''}${peak?' peak':''}"></div>`;
+    }
+    return html;
+  }
+
+  document.getElementById('stats').innerHTML = stats.map(([name,val,max])=>`
+    <div class="stat">
+      <div class="stat-name">${name}</div>
+      <div class="stat-bar-wrap">
+        <div class="stat-bar">${buildSegments(val,max)}</div>
+        <div class="stat-val">${val}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('tips').textContent = TIER_TIPS[tier];
+
+  result.style.display='block';
+  resetBtn.classList.remove('hidden');
+  result.scrollIntoView({behavior:'smooth', block:'start'});
+});
+
+resetBtn.addEventListener('click', ()=>{
+  modelInput.value='';
+  tierPicker.classList.add('hidden');
+  result.style.display='none';
+  resetBtn.classList.add('hidden');
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
