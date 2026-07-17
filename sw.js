@@ -1,4 +1,4 @@
-const CACHE_NAME = "sensi-ff-v1";
+const CACHE_NAME = "sensi-ff-v2";
 const ASSETS = [
   "./index.html",
   "./manifest.json",
